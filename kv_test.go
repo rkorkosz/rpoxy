@@ -20,7 +20,8 @@ func TestKVGetHost(t *testing.T) {
 	ts.EnableHTTP2 = true
 	ts.StartTLS()
 	defer ts.Close()
-	kv := NewKV(ts.URL, ts.Client())
+	kv, err := NewKV(ts.URL, ts.Client())
+	require.NoError(t, err)
 	ctx := context.Background()
 	actual, err := kv.GetHost(ctx, "test")
 	require.NoError(t, err)
@@ -38,7 +39,8 @@ func BenchmarkKVGetHost(b *testing.B) {
 	ts.EnableHTTP2 = true
 	ts.StartTLS()
 	defer ts.Close()
-	kv := NewKV(ts.URL, ts.Client())
+	kv, err := NewKV(ts.URL, ts.Client())
+	require.NoError(b, err)
 	ctx := context.Background()
 	var r URL
 	for n := 0; n < b.N; n++ {
