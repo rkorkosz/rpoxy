@@ -2,3 +2,4 @@ rpoxy
 *.pem
 rpoxy.yaml
 *.out
+*.test
