@@ -22,7 +22,7 @@ func main() {
 		}
 	}
 	srv := &http.Server{
-		TLSConfig: config.tlsConfig,
+		TLSConfig: config.tlsConfig(),
 		Handler:   MultiHostProxy(hostStorage),
 		Addr:      config.Addr,
 	}
