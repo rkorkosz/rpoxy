@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
-	"net/http"
+
+	"github.com/rkorkosz/web"
 )
 
 func main() {
@@ -21,10 +23,10 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	srv := &http.Server{
-		TLSConfig: config.tlsConfig(),
-		Handler:   MultiHostProxy(hostStorage),
-		Addr:      config.Addr,
-	}
-	log.Fatal(srv.ListenAndServeTLS("", ""))
+	srv := web.Server(
+		web.WithAddr(config.Addr),
+		web.WithHandler(MultiHostProxy(hostStorage)),
+		web.WithTLSConfig(config.tlsConfig()),
+	)
+	web.RunServer(context.Background(), srv)
 }

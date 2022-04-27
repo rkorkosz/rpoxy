@@ -22,7 +22,6 @@ func MultiHostProxy(targets HostStorage) *httputil.ReverseProxy {
 			log.Println(err)
 			return
 		}
-		log.Printf("Proxying %s to %s", r.Host, target.String())
 		r.URL.Scheme = target.Scheme
 		r.URL.Host = target.Host
 		if _, ok := r.Header["User-Agent"]; !ok {
@@ -54,11 +53,12 @@ func httpTransport() *http.Transport {
 	return &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
+			Timeout:   10 * time.Second,
+			KeepAlive: 10 * time.Second,
 		}).DialContext,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   10,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
