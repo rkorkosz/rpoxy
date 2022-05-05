@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"log"
 
@@ -23,9 +24,11 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	transport := httpTransport()
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	srv := web.Server(
 		web.WithAddr(config.Addr),
-		web.WithHandler(MultiHostProxy(hostStorage)),
+		web.WithHandler(MultiHostProxy(hostStorage, transport)),
 		web.WithTLSConfig(config.tlsConfig()),
 	)
 	web.RunServer(context.Background(), srv)

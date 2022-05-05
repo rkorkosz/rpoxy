@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"log"
 	"net"
 	"net/http"
@@ -15,7 +14,7 @@ type HostStorage interface {
 	GetHost(context.Context, string) (URL, error)
 }
 
-func MultiHostProxy(targets HostStorage) *httputil.ReverseProxy {
+func MultiHostProxy(targets HostStorage, transport http.RoundTripper) *httputil.ReverseProxy {
 	director := func(r *http.Request) {
 		target, err := targets.GetHost(r.Context(), r.Host)
 		if err != nil {
@@ -28,8 +27,9 @@ func MultiHostProxy(targets HostStorage) *httputil.ReverseProxy {
 			r.Header.Set("User-Agent", "")
 		}
 	}
-	transport := httpTransport()
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	if transport == nil {
+		transport = httpTransport()
+	}
 	return &httputil.ReverseProxy{Director: director, Transport: transport}
 }
 
