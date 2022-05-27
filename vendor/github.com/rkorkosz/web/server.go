@@ -125,9 +125,6 @@ func TlsWithAutoCert(conf *tls.Config, email string, policy autocert.HostPolicy)
 		acme.ALPNProto, // enable tls-alpn ACME challenges
 	}
 	conf.GetCertificate = m.GetCertificate
-	srv := Server(WithAddr(":http"))
-	srv.Handler = m.HTTPHandler(nil)
-	go srv.ListenAndServe()
 	return conf
 }
 
