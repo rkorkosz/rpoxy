@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"flag"
 	"log"
-
-	"github.com/rkorkosz/web"
+	"net/http"
 )
 
 func main() {
@@ -26,10 +24,10 @@ func main() {
 	}
 	transport := httpTransport()
 	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	srv := web.Server(
-		web.WithAddr(config.Addr),
-		web.WithHandler(MultiHostProxy(hostStorage, transport)),
-		web.WithTLSConfig(config.tlsConfig()),
-	)
-	web.RunServer(context.Background(), srv)
+	srv := http.Server{
+		Addr:      config.Addr,
+		Handler:   MultiHostProxy(hostStorage, transport),
+		TLSConfig: config.tlsConfig(),
+	}
+	log.Fatal(srv.ListenAndServeTLS("", ""))
 }
