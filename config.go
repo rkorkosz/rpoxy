@@ -6,7 +6,6 @@ import (
 	"errors"
 	"os"
 
-	"github.com/rkorkosz/web"
 	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/yaml.v3"
 )
@@ -44,13 +43,13 @@ func (c *Config) tlsConfig() *tls.Config {
 		hosts = append(hosts, h)
 	}
 	if c.Email != "" && c.Cert != "" {
-		return web.LocalAndAutoCert(c.Cert, c.Key, c.Email, autocert.HostWhitelist(hosts...))
+		return LocalAndAutoCert(c.Cert, c.Key, c.Email, autocert.HostWhitelist(hosts...))
 	}
 	if c.Cert != "" {
-		return web.LocalTLSConfig(c.Cert, c.Key)
+		return LocalTLSConfig(c.Cert, c.Key)
 	}
 	if c.Email != "" {
-		return web.AutoCertWhitelist(c.Email, hosts...)
+		return AutoCertWhitelist(c.Email, hosts...)
 	}
 	return nil
 }
