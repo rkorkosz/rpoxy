@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode"
 
-	"github.com/hashicorp/errwrap"
 	glob "github.com/ryanuber/go-glob"
 )
 
@@ -138,10 +138,10 @@ func ParseArbitraryKeyValues(input string, out map[string]string, sep string) er
 	// metadata was supplied as JSON input.
 	err = json.Unmarshal([]byte(input), &out)
 	if err != nil {
-		// If JSON unmarshalling fails, consider that the input was
+		// If JSON unmarshaling fails, consider that the input was
 		// supplied as a comma separated string of 'key=value' pairs.
 		if err = ParseKeyValues(input, out, sep); err != nil {
-			return errwrap.Wrapf("failed to parse the input: {{err}}", err)
+			return fmt.Errorf("failed to parse the input: %w", err)
 		}
 	}
 
@@ -204,7 +204,7 @@ func ParseArbitraryStringSlice(input string, sep string) []string {
 	// metadata was supplied as JSON input.
 	err = json.Unmarshal([]byte(input), &ret)
 	if err != nil {
-		// If JSON unmarshalling fails, consider that the input was
+		// If JSON unmarshaling fails, consider that the input was
 		// supplied as a separated string of values.
 		return ParseStringSlice(input, sep)
 	}
@@ -230,16 +230,16 @@ func TrimStrings(items []string) []string {
 // strings. This also may convert the items in the slice to lower case and
 // returns a sorted slice.
 func RemoveDuplicates(items []string, lowercase bool) []string {
-	itemsMap := map[string]bool{}
+	itemsMap := make(map[string]struct{}, len(items))
 	for _, item := range items {
 		item = strings.TrimSpace(item)
-		if lowercase {
-			item = strings.ToLower(item)
-		}
 		if item == "" {
 			continue
 		}
-		itemsMap[item] = true
+		if lowercase {
+			item = strings.ToLower(item)
+		}
+		itemsMap[item] = struct{}{}
 	}
 	items = make([]string, 0, len(itemsMap))
 	for item := range itemsMap {
@@ -254,18 +254,21 @@ func RemoveDuplicates(items []string, lowercase bool) []string {
 // In all cases, strings are compared after trimming whitespace
 // If caseInsensitive, strings will be compared after ToLower()
 func RemoveDuplicatesStable(items []string, caseInsensitive bool) []string {
-	itemsMap := make(map[string]bool, len(items))
+	itemsMap := make(map[string]struct{}, len(items))
 	deduplicated := make([]string, 0, len(items))
 
 	for _, item := range items {
 		key := strings.TrimSpace(item)
+		if _, ok := itemsMap[key]; ok || key == "" {
+			continue
+		}
 		if caseInsensitive {
 			key = strings.ToLower(key)
 		}
-		if key == "" || itemsMap[key] {
+		if _, ok := itemsMap[key]; ok {
 			continue
 		}
-		itemsMap[key] = true
+		itemsMap[key] = struct{}{}
 		deduplicated = append(deduplicated, item)
 	}
 	return deduplicated
@@ -299,17 +302,18 @@ func EquivalentSlices(a, b []string) bool {
 	}
 
 	// First we'll build maps to ensure unique values
-	mapA := map[string]bool{}
-	mapB := map[string]bool{}
+	mapA := make(map[string]struct{}, len(a))
+	mapB := make(map[string]struct{}, len(b))
 	for _, keyA := range a {
-		mapA[keyA] = true
+		mapA[keyA] = struct{}{}
 	}
 	for _, keyB := range b {
-		mapB[keyB] = true
+		mapB[keyB] = struct{}{}
 	}
 
 	// Now we'll build our checking slices
-	var sortedA, sortedB []string
+	sortedA := make([]string, 0, len(mapA))
+	sortedB := make([]string, 0, len(mapB))
 	for keyA := range mapA {
 		sortedA = append(sortedA, keyA)
 	}
@@ -434,23 +438,21 @@ func Difference(a, b []string, lowercase bool) []string {
 	a = RemoveDuplicates(a, lowercase)
 	b = RemoveDuplicates(b, lowercase)
 
-	itemsMap := map[string]bool{}
+	itemsMap := map[string]struct{}{}
 	for _, aVal := range a {
-		itemsMap[aVal] = true
+		itemsMap[aVal] = struct{}{}
 	}
 
 	// Perform difference calculation
 	for _, bVal := range b {
 		if _, ok := itemsMap[bVal]; ok {
-			itemsMap[bVal] = false
+			delete(itemsMap, bVal)
 		}
 	}
 
 	items := []string{}
-	for item, exists := range itemsMap {
-		if exists {
-			items = append(items, item)
-		}
+	for item := range itemsMap {
+		items = append(items, item)
 	}
 	sort.Strings(items)
 	return items
@@ -477,4 +479,32 @@ func GetString(m map[string]interface{}, key string) (string, error) {
 		return "", fmt.Errorf("invalid value at %s: is a %T", key, rawVal)
 	}
 	return str, nil
+}
+
+// Printable returns true if all characters in the string are printable
+// according to Unicode
+func Printable(s string) bool {
+	return strings.IndexFunc(s, func(c rune) bool {
+		return !unicode.IsPrint(c)
+	}) == -1
+}
+
+// StringListToInterfaceList simply takes a []string and turns it into a
+// []interface{} to satisfy the input requirements for other library functions
+func StringListToInterfaceList(in []string) []interface{} {
+	ret := make([]interface{}, len(in))
+	for i, v := range in {
+		ret[i] = v
+	}
+	return ret
+}
+
+// Reverse reverses the input string
+func Reverse(in string) string {
+	l := len(in)
+	out := make([]byte, l)
+	for i := 0; i <= l/2; i++ {
+		out[i], out[l-1-i] = in[l-1-i], in[i]
+	}
+	return string(out)
 }
