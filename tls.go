@@ -43,7 +43,7 @@ func AutoCertWhitelist(email string, hosts ...string) *tls.Config {
 func TlsWithAutoCert(conf *tls.Config, email string, policy autocert.HostPolicy) *tls.Config {
 	conf = conf.Clone()
 	m := &autocert.Manager{
-		Cache:      autocert.DirCache("./letsencrypt/"),
+		Cache:      autocert.DirCache("letsencrypt"),
 		Prompt:     autocert.AcceptTOS,
 		Email:      email,
 		HostPolicy: policy,
